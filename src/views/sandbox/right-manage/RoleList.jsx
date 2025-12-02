@@ -3,7 +3,6 @@ import request from '@/util/request.js'
 import { useState,useEffect } from "react";
 import { DeleteOutlined,UnorderedListOutlined,ExclamationCircleFilled } from '@ant-design/icons'
 import { createStyles } from 'antd-style';
-import '@ant-design/v5-patch-for-react-19';
 const { confirm } = Modal;
 const useStyle = createStyles(({ css, token }) => {
   const { antCls } = token;

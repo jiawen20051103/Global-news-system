@@ -4,7 +4,6 @@ import { useState,useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { DeleteOutlined,EditOutlined,ExclamationCircleFilled,UploadOutlined } from '@ant-design/icons'
 import { createStyles } from 'antd-style';
-import '@ant-design/v5-patch-for-react-19';
 
 const { confirm } = Modal;
 const useStyle = createStyles(({ css, token }) => {

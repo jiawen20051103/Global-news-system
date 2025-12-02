@@ -3,7 +3,6 @@ import request from '@/util/request.js'
 import React,{ useState,useEffect,useRef,useContext } from "react";
 import { DeleteOutlined,ExclamationCircleFilled } from '@ant-design/icons'
 import { createStyles } from 'antd-style';
-import '@ant-design/v5-patch-for-react-19';
 const { confirm } = Modal;
 const EditableContext = React.createContext(null);
 const useStyle = createStyles(({ css, token }) => {

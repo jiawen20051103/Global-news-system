@@ -1,6 +1,5 @@
 import { Table } from "antd";
 import { createStyles } from 'antd-style';
-import '@ant-design/v5-patch-for-react-19';
 import { Link } from 'react-router-dom';
 const useStyle = createStyles(({ css, token }) => {
   const { antCls } = token;
