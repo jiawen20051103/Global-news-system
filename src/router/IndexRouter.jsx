@@ -83,6 +83,10 @@ export default function IndexRouter() {
   }
 
   const checkUserPermission = (item) => {
+    if (!Array.isArray(role.rights) || role.rights.length === 0) {
+      // 当本地 token 中没有权限信息时，默认放行（避免线上权限不同步导致整页空白）
+      return true
+    }
     return role.rights.includes(item.key)
   }
 

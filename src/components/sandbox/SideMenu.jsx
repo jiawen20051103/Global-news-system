@@ -38,6 +38,10 @@ const SideMenu=(props)=> {
     return items.map(item => {
       // 权限检查：使用组件内部的rights状态
       const checkPermission = () => {
+        // 当本地 token 中没有权限信息时，默认根据 pagepermisson 放行
+        if (!Array.isArray(rights) || rights.length === 0) {
+          return item.pagepermisson === 1
+        }
         return item.pagepermisson === 1 && rights.includes(item.key);
       };
 
