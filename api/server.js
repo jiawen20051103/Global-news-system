@@ -1,20 +1,43 @@
-import jsonServer from 'json-server';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+const jsonServer = require('json-server');
+const path = require('path');
+const fs = require('fs');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const dbPath = path.join(__dirname, '../db.json');
+
+if (!fs.existsSync(dbPath)) {
+  console.error('db.json not found at:', dbPath);
+}
 
 const server = jsonServer.create();
-const router = jsonServer.router(join(__dirname, '../db.json'));
-const middlewares = jsonServer.defaults();
+const router = jsonServer.router(dbPath);
+const middlewares = jsonServer.defaults({
+  static: path.join(__dirname, '../public'),
+});
+
+server.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 server.use(middlewares);
 server.use(router);
 
-const PORT = 5000;
-server.listen(PORT, () => {
-  console.log(`JSON Server is running on port ${PORT}`);
-});
-
-export default server;
+module.exports = (req, res) => {
+  const originalUrl = req.url;
+  
+  if (originalUrl.startsWith('/api/server')) {
+    req.url = originalUrl.replace('/api/server', '') || '/';
+  }
+  
+  if (req.url === '/' || req.url === '') {
+    req.url = '/';
+  }
+  
+  server(req, res);
+};
