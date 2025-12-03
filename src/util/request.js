@@ -11,5 +11,6 @@ const request = axios.create({
   baseURL: getBaseURL(),
   timeout: 5000 
 });
+console.log('API baseURL at runtime:', getBaseURL());
 
 export default request;
