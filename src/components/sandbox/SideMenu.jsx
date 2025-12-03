@@ -105,8 +105,6 @@ const SideMenu=(props)=> {
 
   // 2. 当rights变化时，重新获取并转换菜单数据
   useEffect(() => {
-    if (rights.length === 0) return; // 权限为空时不请求（避免无效请求）
-
     request.get('/rights?_embed=children')
       .then(res => {
         const data = Array.isArray(res.data) ? res.data : []

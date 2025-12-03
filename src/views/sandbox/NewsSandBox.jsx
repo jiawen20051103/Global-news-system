@@ -1,55 +1,63 @@
-import SideMenu from "../../components/sandbox/SideMenu"
-import TopHeader from "../../components/sandbox/TopHeader"
-import './NewsSandBox.css'
-import { Outlet } from 'react-router-dom'; 
-import { Layout,theme,Spin } from "antd";
-import { connect  } from 'react-redux';
-import { ThemeProvider } from "../../context/ThemeContext";
-import { useTheme } from "@/context/ThemeContext.jsx";
-const { Content } = Layout
+import SideMenu from "../../components/sandbox/SideMenu";
+import TopHeader from "../../components/sandbox/TopHeader";
+import "./NewsSandBox.css";
+import { Outlet } from "react-router-dom";
+import { Layout, theme, Spin } from "antd";
+import { connect } from "react-redux";
+import { ThemeProvider, useTheme } from "../../context/ThemeContext";
 
-const NewsSandBox=(props)=> {
+const { Content } = Layout;
+
+// 把使用 useTheme 的部分放到 ThemeProvider 内部
+const NewsContent = ({ isLoading }) => {
   const { isDarkMode } = useTheme();
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
+
+  const contentStyle = isDarkMode
+    ? {
+        margin: "16px",
+        padding: 24,
+        minHeight: 280,
+        overflow: "initial",
+        background: "#2d2d2d",
+        borderRadius: borderRadiusLG,
+      }
+    : {
+        margin: "16px",
+        padding: 24,
+        minHeight: 280,
+        overflow: "initial",
+        background: colorBgContainer,
+        borderRadius: borderRadiusLG,
+      };
+
+  return (
+    <Content style={contentStyle}>
+      <Spin size="large" spinning={isLoading}>
+        <Outlet />
+      </Spin>
+    </Content>
+  );
+};
+
+const NewsSandBox = (props) => {
   return (
     <ThemeProvider>
-    <Layout>
-      <SideMenu></SideMenu>
       <Layout>
-        <TopHeader></TopHeader>
-        <Content
-          style={isDarkMode?
-          {
-            margin: '16px',
-            padding: 24,
-            minHeight: 280,
-            overflow: 'initial',
-            background: '#2d2d2d',
-            borderRadius: borderRadiusLG,
-          }:
-          {
-            margin: '16px',
-            padding: 24,
-            minHeight: 280,
-            overflow: 'initial',
-            background: colorBgContainer,
-            borderRadius: borderRadiusLG,
-          }}
-        >
-          <Spin size="large" spinning={props.isLoading}>
-            <Outlet/>
-          </Spin>
-        </Content>
+        <SideMenu />
+        <Layout>
+          <TopHeader />
+          <NewsContent isLoading={props.isLoading} />
+        </Layout>
       </Layout>
-    </Layout>
     </ThemeProvider>
-  )
-}
+  );
+};
 
-const mapStateToProps = ({LoadingReducer:{isLoading}}) => ({
-  isLoading
-})
+const mapStateToProps = ({ LoadingReducer: { isLoading } }) => ({
+  isLoading,
+});
 
-export default connect(mapStateToProps)(NewsSandBox)
+export default connect(mapStateToProps)(NewsSandBox);
