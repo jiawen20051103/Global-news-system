@@ -8,6 +8,7 @@ import { Button, Layout,theme,Dropdown,Avatar } from 'antd';
 import { useNavigate } from 'react-router-dom'
 import { connect  } from 'react-redux';
 import { useTheme } from '@/context/ThemeContext.jsx';
+import getTokenInfo from '@/util/getTokenInfo';
 const { Header } = Layout;
 
 
@@ -16,7 +17,9 @@ const TopHeader = (props) => {
   
   // const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate()
-  const {role:{roleName},username} = JSON.parse(localStorage.getItem('token'))
+  const token = getTokenInfo() || {}
+  const roleName = token?.role?.roleName || ''
+  const username = token?.username || ''
   const { isDarkMode, toggleDarkMode, appStyles } = useTheme();
 
   const changeCollapsed = () => {
