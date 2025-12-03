@@ -1,6 +1,6 @@
-const jsonServer = require('json-server');
-const path = require('path');
-const fs = require('fs');
+import jsonServer from 'json-server';
+import path from 'path';
+import fs from 'fs';
 
 const dbPath = path.join(process.cwd(), 'db.json');
 
@@ -38,8 +38,7 @@ const createServer = () => {
   return server;
 };
 
-module.exports = (req, res) => {
-  const server = createServer();
+export default function handler(req, res) {
   const originalUrl = req.url || '';
 
   // Vercel 重写到 /api/server.js 时，请求路径可能是：
@@ -57,5 +56,6 @@ module.exports = (req, res) => {
     req.url = '/';
   }
 
+  const server = createServer();
   server(req, res);
-};
+}
