@@ -33,7 +33,7 @@ export default function News() {
                   size="small"
                   dataSource={item[1]}
                   pagination={{pageSize:3}}
-                  renderItem={data => <List.Item><a href={`http://localhost:5173/detail/${data.id}`}>{data.title}</a></List.Item>}
+                  renderItem={data => <List.Item><a href={`/detail/${data.id}`}>{data.title}</a></List.Item>}
                 />
               </Card>
             </Col>

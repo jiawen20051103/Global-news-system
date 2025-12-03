@@ -79,7 +79,7 @@ export default function NewsUpdate() {
         style={{height:'50px'}}
         items={[
           {
-            href: 'http://localhost:5173/news-manage/draft',
+            href: '/news-manage/draft',
             title:( 
             <>
               <ArrowLeftOutlined />

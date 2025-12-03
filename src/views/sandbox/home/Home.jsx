@@ -193,7 +193,7 @@ export default function Home() {
               // bordered
               dataSource={Array.isArray(viewList) ? viewList : []}
               renderItem={item => <List.Item>
-                <a href={`http://localhost:5173/detail/${item.id}`}>{item.title}</a>
+                <a href={`/detail/${item.id}`}>{item.title}</a>
               </List.Item>}
             />
           </Card>
@@ -210,7 +210,7 @@ export default function Home() {
               // bordered
               dataSource={Array.isArray(starList) ? starList : []}
               renderItem={item => <List.Item>
-                <a href={`http://localhost:5173/detail/${item.id}`}>{item.title}</a>
+                <a href={`/detail/${item.id}`}>{item.title}</a>
               </List.Item>}
             />
           </Card>
