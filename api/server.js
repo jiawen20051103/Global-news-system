@@ -29,15 +29,22 @@ server.use(middlewares);
 server.use(router);
 
 module.exports = (req, res) => {
-  const originalUrl = req.url;
-  
+  const originalUrl = req.url || '';
+
+  // Vercel 重写到 /api/server.js 时，请求路径可能是：
+  // - /api/rights
+  // - /api/news
+  // - /api/server/rights（旧规则）
+  // 这里统一去掉前缀 /api/server 或 /api，再交给 json-server 处理
   if (originalUrl.startsWith('/api/server')) {
     req.url = originalUrl.replace('/api/server', '') || '/';
+  } else if (originalUrl.startsWith('/api')) {
+    req.url = originalUrl.replace('/api', '') || '/';
   }
-  
-  if (req.url === '/' || req.url === '') {
+
+  if (!req.url || req.url === '') {
     req.url = '/';
   }
-  
+
   server(req, res);
 };
