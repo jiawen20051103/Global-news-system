@@ -2,7 +2,7 @@ import { Card, Col, Row,List,Avatar,Drawer } from 'antd';
 import { EditOutlined, EllipsisOutlined, SettingOutlined } from '@ant-design/icons';
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import * as echarts from 'echarts';
-import _ from 'lodash'
+import _ from 'lodash';
 import request from '../../../util/request';
 import { ThemeProvider } from '../../../context/ThemeContext';
 import { useTheme } from '@/context/ThemeContext.jsx';
