@@ -2,7 +2,7 @@ import { Card, Col, Row,List,Avatar,Drawer } from 'antd';
 import { EditOutlined, EllipsisOutlined, SettingOutlined } from '@ant-design/icons';
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import * as echarts from 'echarts';
-import _ from 'lodash';
+import groupBy from 'lodash/groupBy';
 import request from '../../../util/request';
 import { ThemeProvider } from '../../../context/ThemeContext';
 import { useTheme } from '@/context/ThemeContext.jsx';
@@ -16,13 +16,17 @@ export default function Home() {
   const [categoriesMap, setCategoriesMap] = useState({}) // 存储分类映射
   const [open, setOpen] = useState(false);
   const [pieChart, setPieChart] = useState(null);
+  const [barChart, setBarChart] = useState(null);
   const barRef = useRef()
   const pieRef = useRef()
 
   // 获取分类数据并建立映射
   useEffect(() => {
+    let isMounted = true;
+    
     request.get('/categories')
       .then(res => {
+        if (!isMounted) return;
         const categories = Array.isArray(res.data) ? res.data : []
         const map = {}
         categories.forEach(cat => {
@@ -33,61 +37,55 @@ export default function Home() {
         setCategoriesMap(map)
       })
       .catch(err => {
+        if (!isMounted) return;
         console.error('获取分类数据失败:', err)
         setCategoriesMap({})
       })
+    
+    return () => {
+      isMounted = false;
+    }
   }, [])
 
   useEffect(()=>{
+    let isMounted = true;
+    
     request.get(`/news?publishState=2&_sort=-view&_order=desc&_limit=6`)
       .then(res=>{
+        if (!isMounted) return;
         const data = Array.isArray(res.data) ? res.data : []
         setViewList(data)
       })
       .catch(err => {
+        if (!isMounted) return;
         console.error('获取浏览量榜单失败:', err)
         setViewList([])
       })
+    
+    return () => {
+      isMounted = false;
+    }
   },[])
 
   useEffect(()=>{
+    let isMounted = true;
+    
     request.get(`/news?publishState=2&_sort=-star&_order=desc&_limit=6`)
       .then(res=>{
+        if (!isMounted) return;
         const data = Array.isArray(res.data) ? res.data : []
         setStarList(data)
       })
       .catch(err => {
+        if (!isMounted) return;
         console.error('获取点赞榜单失败:', err)
         setStarList([])
       })
-  },[])
-
-  useEffect(()=>{
-    request.get(`/news?publishState=2`)
-      .then(res=>{
-        const data = Array.isArray(res.data) ? res.data : []
-        // 使用 categoryId 查找分类名称
-        const grouped = _.groupBy(data, item => {
-          if (item.category && item.category.title) {
-            return item.category.title
-          }
-          if (item.categoryId && categoriesMap[item.categoryId]) {
-            return categoriesMap[item.categoryId]
-          }
-          return '未分类'
-        });
-        renderBarView(grouped);
-        setAllList(data)
-      })
-      .catch(err => {
-        console.error('获取全部新闻失败:', err)
-        setAllList([])
-      })
-
-    return ()=>{  
-      window.onresize = null
+    
+    return () => {
+      isMounted = false;
     }
-  },[categoriesMap, renderBarView])
+  },[])
 
   // 安全获取 token 信息，处理 SSR 环境
   const tokenStr = useMemo(() => {
@@ -113,7 +111,20 @@ export default function Home() {
       return;
     }
     
-    let myChart = echarts.init(barRef.current);
+    let myChart;
+    if (!barChart) {
+      // 检查是否已经存在实例
+      const existingInstance = echarts.getInstanceByDom(barRef.current);
+      if (existingInstance) {
+        myChart = existingInstance;
+      } else {
+        myChart = echarts.init(barRef.current);
+      }
+      setBarChart(myChart);
+    } else {
+      myChart = barChart;
+    }
+    
     const keys = Object.keys(obj);
     const values = Object.values(obj).map(item => item.length);
 
@@ -165,7 +176,45 @@ export default function Home() {
     window.onresize = () => {
       myChart.resize()
     }
-  }, [])
+  }, [barChart])
+
+  useEffect(()=>{
+    let isMounted = true;
+    
+    request.get(`/news?publishState=2`)
+      .then(res=>{
+        if (!isMounted) return;
+        
+        const data = Array.isArray(res.data) ? res.data : []
+        // 使用 categoryId 查找分类名称
+        const grouped = groupBy(data, item => {
+          if (item.category && item.category.title) {
+            return item.category.title
+          }
+          if (item.categoryId && categoriesMap[item.categoryId]) {
+            return categoriesMap[item.categoryId]
+          }
+          return '未分类'
+        });
+        renderBarView(grouped);
+        setAllList(data)
+      })
+      .catch(err => {
+        if (!isMounted) return;
+        console.error('获取全部新闻失败:', err)
+        setAllList([])
+      })
+
+    return ()=>{  
+      isMounted = false;
+      window.onresize = null;
+      // 清理图表实例
+      if (barChart) {
+        barChart.dispose();
+        setBarChart(null);
+      }
+    }
+  },[categoriesMap, renderBarView, barChart])
 
   const renderPieView = useCallback(() => {
     if (!pieRef.current) {
@@ -182,7 +231,7 @@ export default function Home() {
     }
     
     // 使用 categoryId 查找分类名称
-    let groupObj = _.groupBy(currentList, item => {
+    let groupObj = groupBy(currentList, item => {
       if (item.category && item.category.title) {
         return item.category.title
       }
@@ -210,7 +259,13 @@ export default function Home() {
     
     let myChart;
     if(!pieChart){
-      myChart = echarts.init(pieRef.current)
+      // 检查是否已经存在实例
+      const existingInstance = echarts.getInstanceByDom(pieRef.current);
+      if (existingInstance) {
+        myChart = existingInstance;
+      } else {
+        myChart = echarts.init(pieRef.current)
+      }
       setPieChart(myChart)
     }else{
       myChart = pieChart
