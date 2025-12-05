@@ -87,13 +87,28 @@ export default function Home() {
     return ()=>{  
       window.onresize = null
     }
-  },[categoriesMap])
+  },[categoriesMap, renderBarView])
 
-  const tokenStr = useMemo(() => localStorage.getItem('token'), [])
-  const token = useMemo(() => tokenStr ? JSON.parse(tokenStr) : {}, [tokenStr])
+  // 安全获取 token 信息，处理 SSR 环境
+  const tokenStr = useMemo(() => {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem('token');
+  }, [])
+  
+  const token = useMemo(() => {
+    if (!tokenStr) return {};
+    try {
+      return JSON.parse(tokenStr);
+    } catch (e) {
+      return {};
+    }
+  }, [tokenStr])
+  
   const username = useMemo(() => token?.username || '', [token])
+  const region = useMemo(() => token?.region || '', [token])
+  const roleName = useMemo(() => token?.role?.roleName || '', [token])
 
-  const renderBarView = (obj) => {
+  const renderBarView = useCallback((obj) => {
     if (!barRef.current) {
       return;
     }
@@ -150,7 +165,7 @@ export default function Home() {
     window.onresize = () => {
       myChart.resize()
     }
-  }
+  }, [])
 
   const renderPieView = useCallback(() => {
     if (!pieRef.current) {
@@ -248,12 +263,6 @@ export default function Home() {
       setPieChart(null); // 重置 pieChart 状态，下次打开重新初始化
     }
   }, [open, allList, categoriesMap, renderPieView, pieChart]);
-
-  const tokenStr = localStorage.getItem('token')
-  const token = tokenStr ? JSON.parse(tokenStr) : {}
-  const username = token?.username || ''
-  const region = token?.region || ''
-  const roleName = token?.role?.roleName || ''
 
   return (
     <ThemeProvider>
