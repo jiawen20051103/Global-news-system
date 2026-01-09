@@ -102,9 +102,11 @@ export default function Home() {
     }
   }, [tokenStr])
   
-  const username = useMemo(() => token?.username || '', [token])
-  const region = useMemo(() => token?.region || '', [token])
-  const roleName = useMemo(() => token?.role?.roleName || '', [token])
+  // 未登录时显示默认值
+  const username = useMemo(() => token?.username || '游客', [token])
+  const region = useMemo(() => token?.region || '全球', [token])
+  const roleName = useMemo(() => token?.role?.roleName || '游客', [token])
+  const isLogin = useMemo(() => !!tokenStr, [tokenStr])
 
   const renderBarView = useCallback((obj) => {
     if (!barRef.current) {
@@ -223,11 +225,14 @@ export default function Home() {
     }
 
     const safeAllList = Array.isArray(allList) ? allList : []
-    let currentList = safeAllList.filter(item=>item.author===username)
-    
-    // 如果当前用户没有数据，使用全部数据
-    if (currentList.length === 0) {
-      currentList = safeAllList
+    let currentList = []
+
+    if (isLogin) {
+      // 已登录用户：优先使用当前用户的数据，如果没有则退回到全部数据
+      currentList = safeAllList.filter(item => item.author === username)
+      if (currentList.length === 0) {
+        currentList = safeAllList
+      }
     }
     
     // 使用 categoryId 查找分类名称
@@ -249,14 +254,7 @@ export default function Home() {
       })
     }
     
-    // 如果没有数据，显示提示
-    if (list.length === 0) {
-      list.push({
-        name: '暂无数据',
-        value: 1
-      })
-    }
-    
+    // 如果没有数据，直接渲染空图表
     let myChart;
     if(!pieChart){
       // 检查是否已经存在实例
@@ -274,7 +272,9 @@ export default function Home() {
 
     option = {
       title: {
-        text: currentList.length === safeAllList.length ? '全部新闻分类图示' : '当前用户新闻分类图示',
+        text: !isLogin
+          ? '请登录后查看个人新闻分类'
+          : (currentList.length === safeAllList.length ? '全部新闻分类图示' : '当前用户新闻分类图示'),
         left: 'center'
       },
       tooltip: {
@@ -303,7 +303,7 @@ export default function Home() {
     };
 
     option && myChart.setOption(option);
-  }, [allList, username, categoriesMap, pieChart])
+  }, [allList, username, categoriesMap, pieChart, isLogin])
 
   useEffect(() => {
     if (open && allList.length > 0 && Object.keys(categoriesMap).length > 0) { 

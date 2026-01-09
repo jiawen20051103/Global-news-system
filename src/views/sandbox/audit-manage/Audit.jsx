@@ -2,7 +2,9 @@ import request from '@/util/request.js'
 import React,{useState,useEffect} from 'react'
 import { Table,Button,notification } from 'antd'
 import { createStyles } from 'antd-style';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { checkLogin } from '@/util/checkLogin';
+import { showLoginModal } from '@/components/common/LoginModal';
 
 const useStyle = createStyles(({ css, token }) => {
   const { antCls } = token;
@@ -25,9 +27,21 @@ const useStyle = createStyles(({ css, token }) => {
 export default function Audit() {
   const [dataSource,setDataSource] = useState([])
   const { styles } = useStyle();
-  const {roleId,region,username} = JSON.parse(localStorage.getItem('token'))
+  const navigate = useNavigate()
+  const location = useLocation()
+  const isLogin = checkLogin()
+  const token = isLogin ? JSON.parse(localStorage.getItem('token')) : null
+  const roleId = token?.roleId || null
+  const region = token?.region || ''
+  const username = token?.username || ''
 
   useEffect(()=>{
+    // 未登录用户不显示审核列表
+    if (!isLogin) {
+      setDataSource([])
+      return
+    }
+    
     const roleObj = {
       '1': 'superadmin',
       '2': 'admin',
@@ -40,9 +54,15 @@ export default function Audit() {
         ...list.filter(item=>item.region === region && roleObj[item.roleId]=== 'editor'),
       ])
     })
-  },[roleId,region,username])
+  },[roleId,region,username,isLogin])
 
   const handleAudit = (item,auditState,publishState) => {
+    // 检查是否登录
+    if (!isLogin) {
+      showLoginModal(navigate, location.pathname);
+      return;
+    }
+    
     setDataSource(dataSource.filter(data=>data.id !== item.id))
     request.patch(`/news/${item.id}`,{
       auditState,

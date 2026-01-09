@@ -5,6 +5,7 @@ import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
 
 import Login from '../views/login/Login.jsx'
+import Register from '../views/login/Register.jsx'
 import NewsSandBox from '../views/sandbox/NewsSandBox.jsx'
 import Home from '../views/sandbox/home/Home.jsx'
 import UserList from '../views/sandbox/user-manage/UserList.jsx'
@@ -24,6 +25,7 @@ import NewsUpdate from '@/components/sandbox/news-manage/NewsUpdate'
 import News from '@/views/news/News'
 import Detail from '@/views/news/Detail'
 import getTokenInfo from '@/util/getTokenInfo'
+import { checkLogin, getGuestRights } from '@/util/checkLogin'
 
 const LocalRouterMap = {
   '/home': Home,
@@ -43,10 +45,8 @@ const LocalRouterMap = {
 }
 
 const PrivateRoute = () => {
-  // 先判断是否在浏览器环境
-  const isBrowser = typeof window !== 'undefined';
-  const isLogin = isBrowser ? !!localStorage.getItem('token') : false;
-  return isLogin ? <NewsSandBox /> : <Navigate to="/login" replace />
+  // 允许未登录用户访问，但使用区域编辑的权限（只读模式）
+  return <NewsSandBox />
 }
 
 export default function IndexRouter() {
@@ -73,9 +73,15 @@ export default function IndexRouter() {
   }, [])
 
   const token = getTokenInfo()
+  const isLogin = checkLogin()
+  
+  // 如果未登录，使用区域编辑的权限（只读模式）
   let role = { rights: [] }
-  if (token && token.role) {
+  if (isLogin && token && token.role) {
     role = { rights: [], ...token.role }
+  } else if (!isLogin) {
+    // 未登录用户使用区域编辑的权限
+    role = { rights: getGuestRights() }
   }
 
   const checkRoute = (item) => {
@@ -99,6 +105,7 @@ export default function IndexRouter() {
     >
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/news" element={<News />} />
         <Route path="/detail/:id" element={<Detail />} />
         

@@ -5,6 +5,9 @@ import { useNavigate,useParams } from 'react-router-dom';
 import style from '@/views/sandbox/news-manage/News.module.css';
 import request from '@/util/request.js'
 import NewsEditor from './NewsEditor';
+import { checkLogin } from '@/util/checkLogin';
+import { showLoginModal } from '@/components/common/LoginModal';
+import { useLocation } from 'react-router-dom';
 
 export default function NewsUpdate() {
   const { id } = useParams();
@@ -13,8 +16,12 @@ export default function NewsUpdate() {
   const [fromInfo,setFormInfo] = useState({})
   const [content,setContent] = useState('')
   const [form] = Form.useForm();
-  // const User = JSON.parse(localStorage.getItem('token'))
   const navigate = useNavigate()
+  const location = useLocation()
+  
+  // 检查是否登录
+  const isLogin = checkLogin()
+  const User = isLogin ? JSON.parse(localStorage.getItem('token')) : null
 
   useEffect(()=>{
     request.get('/categories').then(res=>{
@@ -37,6 +44,12 @@ export default function NewsUpdate() {
   },[id,form])
 
   const handleNext = () => {
+    // 检查是否登录
+    if (!isLogin) {
+      showLoginModal(navigate, location.pathname);
+      return;
+    }
+    
     if(current === 0){
       form.validateFields().then(res=>{
         // console.log(res);
@@ -58,6 +71,12 @@ export default function NewsUpdate() {
   }
 
   const handleSave = (auditState) => {
+    // 检查是否登录
+    if (!isLogin || !User) {
+      showLoginModal(navigate, location.pathname);
+      return;
+    }
+    
     request.patch(`/news/${id}`,{
       ...fromInfo,
       'content': content,

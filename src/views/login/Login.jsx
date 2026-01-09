@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Form,Input,Button, message } from 'antd'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { UserOutlined,LockOutlined } from '@ant-design/icons'
 import Particles, { initParticlesEngine } from "@tsparticles/react";
 import { loadSlim } from "@tsparticles/slim"; 
@@ -10,6 +10,7 @@ import request from '@/util/request.js';
 export default function Login() {
   const [init, setInit] = useState(false);
   const navigate = useNavigate()
+  const location = useLocation()
 
   useEffect(() => {
     initParticlesEngine(async (engine) => {
@@ -114,7 +115,9 @@ export default function Login() {
           message.error('用户名或密码不匹配')
         }else{
           localStorage.setItem('token',JSON.stringify(res.data[0]))
-          navigate('/home')
+          // 如果是从其他页面跳转过来的，返回原页面，否则跳转到首页
+          const from = location.state?.from?.pathname || '/home'
+          navigate(from, { replace: true })
         }
     })
   };
@@ -158,8 +161,17 @@ export default function Login() {
           </Form.Item>
 
           <Form.Item>
-            <Button block type="primary" htmlType="submit" style={{width:'68px'}}>
+            <Button block type="primary" htmlType="submit" style={{width:'500px'}}>
               登录
+            </Button>
+          </Form.Item>
+          <Form.Item>
+            <Button 
+              type="link" 
+              onClick={() => navigate('/register')}
+              style={{width:'500px', textAlign:'center'}}
+            >
+              没有账号？去注册
             </Button>
           </Form.Item>
         </Form>

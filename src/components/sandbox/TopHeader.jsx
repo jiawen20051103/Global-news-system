@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom'
 import { connect  } from 'react-redux';
 import { useTheme } from '@/context/ThemeContext.jsx';
 import getTokenInfo from '@/util/getTokenInfo';
+import { checkLogin } from '@/util/checkLogin';
 const { Header } = Layout;
 
 
@@ -17,6 +18,7 @@ const TopHeader = (props) => {
   
   // const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate()
+  const isLogin = checkLogin()
   const token = getTokenInfo() || {}
   const roleName = token?.role?.roleName || ''
   const username = token?.username || ''
@@ -26,7 +28,7 @@ const TopHeader = (props) => {
     props.changeCollapsed()
   }
 
-  const items = [
+  const items = isLogin ? [
     {
       label: (
         <div>
@@ -55,6 +57,23 @@ const TopHeader = (props) => {
       key: '1',
       danger:true
     },
+  ] : [
+    {
+      label: (
+        <div onClick={() => navigate('/login')}>
+          请登录
+        </div>
+      ),
+      key: '0',
+    },
+    {
+      label: (
+        <div onClick={toggleDarkMode}>
+          {isDarkMode ? '切换亮色模式':'切换暗色模式'}
+        </div>
+      ),
+      key: '2',
+    },
   ];
 
   const {
@@ -75,7 +94,11 @@ const TopHeader = (props) => {
       />
 
       <div style={{float:'right'}}>
-        <span style={{marginRight:'10px'}}>欢迎<span style={{color:'#1890ff'}}> {username} </span>回来</span>
+        {isLogin ? (
+          <span style={{marginRight:'10px'}}>欢迎<span style={{color:'#1890ff'}}> {username} </span>回来</span>
+        ) : (
+          <span style={{marginRight:'10px'}}>请登录</span>
+        )}
 
         <Dropdown menu={{ items }}>
             <Avatar size={40} icon={<UserOutlined />} style={{marginRight:'16px'}}/>

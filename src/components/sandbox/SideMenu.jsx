@@ -10,6 +10,7 @@ import {
   // 根据需要添加其他图标
 } from '@ant-design/icons';
 import { connect  } from 'react-redux';
+import { checkLogin, getGuestRights } from '@/util/checkLogin';
 
 const { Sider } = Layout;
 
@@ -74,16 +75,22 @@ const SideMenu=(props)=> {
   useEffect(() => {
     const getRights = () => {
       try {
-        const token = localStorage.getItem('token');
-        if (token) {
-          const { role } = JSON.parse(token);
-          setRights(role?.rights || []); // 安全获取rights
+        const isLogin = checkLogin();
+        if (isLogin) {
+          const token = localStorage.getItem('token');
+          if (token) {
+            const { role } = JSON.parse(token);
+            setRights(role?.rights || []); // 安全获取rights
+          } else {
+            setRights([]);
+          }
         } else {
-          setRights([]); // 无token时清空权限
+          // 未登录用户使用区域编辑的权限（只读）
+          setRights(getGuestRights());
         }
       } catch (error) {
         console.error('解析token失败:', error);
-        setRights([]);
+        setRights(getGuestRights());
       }
     };
 

@@ -3,6 +3,9 @@ import request from '@/util/request.js'
 import React,{ useState,useEffect,useRef,useContext } from "react";
 import { DeleteOutlined,ExclamationCircleFilled } from '@ant-design/icons'
 import { createStyles } from 'antd-style';
+import { checkLogin } from '@/util/checkLogin';
+import { showLoginModal } from '@/components/common/LoginModal';
+import { useNavigate } from 'react-router-dom';
 const { confirm } = Modal;
 const EditableContext = React.createContext(null);
 const useStyle = createStyles(({ css, token }) => {
@@ -25,7 +28,9 @@ const useStyle = createStyles(({ css, token }) => {
 
 export default function NewsCategory() {
   const { styles } = useStyle();
+  const navigate = useNavigate();
   const [dataSource,setDataSource] = useState([])
+  const isLogin = checkLogin()
 
   useEffect(()=>{
     request.get('/categories').then(res=>{
@@ -61,6 +66,11 @@ const EditableCell = ({
     }
   }, [editing]);
   const toggleEdit = () => {
+    // 检查是否登录
+    if (!checkLogin()) {
+      showLoginModal(navigate, window.location.pathname);
+      return;
+    }
     setEditing(!editing);
     form.setFieldsValue({ [dataIndex]: record[dataIndex] });
   };
@@ -104,7 +114,12 @@ const EditableCell = ({
   };
 
   const deleteMethod = (item) => {
-    // console.log(item);
+    // 检查是否登录
+    if (!isLogin) {
+      showLoginModal(navigate, window.location.pathname);
+      return;
+    }
+    
     setDataSource(dataSource.filter(data => data.id !== item.id))
     request.delete(`/categories/${item.id}`)
   }
@@ -125,6 +140,12 @@ const EditableCell = ({
   };
 
   const handleSave = (record) => {
+    // 检查是否登录
+    if (!isLogin) {
+      showLoginModal(navigate, window.location.pathname);
+      return;
+    }
+    
     console.log(record);
     setDataSource(dataSource.map(item=>{
       if(item.id === record.id){

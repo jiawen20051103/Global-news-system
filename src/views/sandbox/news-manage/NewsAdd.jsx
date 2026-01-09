@@ -7,6 +7,9 @@ import NewsEditor from '../../../components/sandbox/news-manage/NewsEditor'
 import { useTheme } from '../../../context/ThemeContext';
 import '../../../components/sandbox/news-manage/NewsPreview.css';
 import { color } from 'echarts';
+import { checkLogin } from '@/util/checkLogin';
+import { showLoginModal } from '@/components/common/LoginModal';
+import { useLocation } from 'react-router-dom';
 
 const { useForm } = Form
 
@@ -16,9 +19,13 @@ export default function NewsAdd() {
   const [fromInfo,setFormInfo] = useState({})
   const [content,setContent] = useState('')
   const [form] = useForm()
-  const User = JSON.parse(localStorage.getItem('token'))
   const navigate = useNavigate()
+  const location = useLocation()
   const { isDarkMode } = useTheme();
+  
+  // 检查是否登录
+  const isLogin = checkLogin()
+  const User = isLogin ? JSON.parse(localStorage.getItem('token')) : null
 
   useEffect(()=>{
     request.get('/categories').then(res=>{
@@ -28,6 +35,12 @@ export default function NewsAdd() {
   },[])
 
   const handleNext = () => {
+    // 检查是否登录
+    if (!isLogin) {
+      showLoginModal(navigate, location.pathname);
+      return;
+    }
+    
     if(current === 0){
       form.validateFields().then(res=>{
         // console.log(res);
@@ -49,6 +62,12 @@ export default function NewsAdd() {
   }
 
   const handleSave = (auditState) => {
+    // 检查是否登录
+    if (!isLogin || !User) {
+      showLoginModal(navigate, location.pathname);
+      return;
+    }
+    
     request.post('/news',{
       ...fromInfo,
       'content': content,
@@ -130,7 +149,13 @@ export default function NewsAdd() {
               name="title"
               rules={[{ required: true, message: 'Please input your news title !' }]}
             >
-              <Input/>
+              <Input
+                onClick={() => {
+                  if (!isLogin) {
+                    showLoginModal(navigate, location.pathname);
+                  }
+                }}
+              />
             </Form.Item>
 
             <Form.Item
@@ -138,7 +163,13 @@ export default function NewsAdd() {
               name="categoryId"
               rules={[{ required: true, message: 'Please choose your news category !' }]}
             >
-              <Select>
+              <Select
+                onClick={() => {
+                  if (!isLogin) {
+                    showLoginModal(navigate, location.pathname);
+                  }
+                }}
+              >
                 {
                   categoryList.map(item =>
                     <Select.Option value={item.id} key={item.id}>{item.title}</Select.Option>
@@ -152,7 +183,13 @@ export default function NewsAdd() {
               name="summary"
               rules={[{ required: true, message: 'Please input your news summary !' }]}
             >
-              <Input />
+              <Input 
+                onClick={() => {
+                  if (!isLogin) {
+                    showLoginModal(navigate, location.pathname);
+                  }
+                }}
+              />
             </Form.Item>
           </Form>
         </div>

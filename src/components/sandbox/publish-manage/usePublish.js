@@ -1,19 +1,32 @@
 import request from '@/util/request.js'
 import {useEffect, useState} from 'react'
 import {notification} from 'antd'
+import { checkLogin } from '@/util/checkLogin';
 
 function usePublish(type){
   const [dataSource,setDataSource] = useState([])
-  const {username} = JSON.parse(localStorage.getItem('token'))
+  const isLogin = checkLogin()
+  const token = isLogin ? JSON.parse(localStorage.getItem('token')) : null
+  const username = token?.username || ''
+  
   useEffect(()=>{
+    // 未登录用户不显示发布列表
+    if (!isLogin) {
+      setDataSource([])
+      return
+    }
+    
     request.get(`/news?author=${username}&publishState=${type}&_embed=category`)
       .then(res=>{
         // console.log(res.data);
         setDataSource(res.data)
       })
-  },[username,type])
+  },[username,type,isLogin])
 
   const handlePublish = (id) => {
+    if (!isLogin) {
+      return;
+    }
     console.log(id);
     setDataSource(dataSource.filter(item=>item.id !== id))
     request.patch(`/news/${id}`,{
@@ -30,6 +43,9 @@ function usePublish(type){
   }
 
   const handleSunset = (id) => {
+    if (!isLogin) {
+      return;
+    }
     console.log(id);
     setDataSource(dataSource.filter(item=>item.id !== id))
     request.patch(`/news/${id}`,{
@@ -45,6 +61,9 @@ function usePublish(type){
   }
 
   const handleDelete = (id) => {
+    if (!isLogin) {
+      return;
+    }
     console.log(id);
     setDataSource(dataSource.filter(item=>item.id !== id))
     request.delete(`/news/${id}`).then(res=>{
