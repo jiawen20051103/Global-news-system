@@ -1,9 +1,10 @@
 import { Form, Input, Select} from "antd";
 import { useState,useContext,useEffect  } from "react";
 import { FormContext } from "antd/es/form/context";
+import getTokenInfo from '@/util/getTokenInfo';
 
 const UserForm = (props) => {
-  const {roleId,region} = JSON.parse(localStorage.getItem('token'))
+  const {roleId,region} = getTokenInfo()
   
   const [isDisabled,setIsDisabled] = useState(false)
   // 在组件内部先获取正确的表单实例

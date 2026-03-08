@@ -4,6 +4,7 @@ import React, { useEffect,useState } from 'react'
 import { createStyles } from 'antd-style';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { checkLogin } from '@/util/checkLogin';
+import getTokenInfo from '@/util/getTokenInfo';
 import { showLoginModal } from '@/components/common/LoginModal';
 
 const useStyle = createStyles(({ css, token }) => {
@@ -30,7 +31,7 @@ export default function AuditList() {
   const location = useLocation()
   const [dataSource,setDataSource] = useState([])
   const isLogin = checkLogin()
-  const token = isLogin ? JSON.parse(localStorage.getItem('token')) : null
+  const token = isLogin ? getTokenInfo() : null
   const username = token?.username || ''
 
   useEffect(()=>{
@@ -42,8 +43,13 @@ export default function AuditList() {
     
     request.get(`/news?author=${username}&auditState_ne=0&publishState_lte=1`)
       .then(res=>{
-        // console.log(res.data);
-        setDataSource(res.data)
+        // 后端可能返回 { total, list } 或数组格式
+        const data = Array.isArray(res.data) ? res.data : (res.data?.list || [])
+        setDataSource(data)
+      })
+      .catch(err => {
+        console.error('获取审核列表失败:', err)
+        setDataSource([])
       })
   },[username, isLogin])
 
@@ -55,7 +61,7 @@ export default function AuditList() {
     }
     
     setDataSource(dataSource.filter(data=>data.id !== item.id))
-    request.patch(`/news/${item.id}`,{
+    request.put(`/news/${item.id}`,{
       auditState: 0
     }).then(res=>{
       notification.info({

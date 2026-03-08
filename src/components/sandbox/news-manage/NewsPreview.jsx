@@ -64,7 +64,7 @@ export default function NewsPreview() {
     {
       key: '10',
       label: '新闻类型',
-      children: <span>{newsInfo.category.title}</span>,
+      children: <span>{newsInfo.category?.title || newsInfo.categoryId || '-'}</span>,
     },
     {
       key: '2',

@@ -53,7 +53,8 @@ export default function Home() {
     request.get(`/news?publishState=2&_sort=-view&_order=desc&_limit=6`)
       .then(res=>{
         if (!isMounted) return;
-        const data = Array.isArray(res.data) ? res.data : []
+        // 后端可能返回 { total, list } 或数组格式
+        const data = Array.isArray(res.data) ? res.data : (res.data?.list || [])
         setViewList(data)
       })
       .catch(err => {
@@ -73,7 +74,8 @@ export default function Home() {
     request.get(`/news?publishState=2&_sort=-star&_order=desc&_limit=6`)
       .then(res=>{
         if (!isMounted) return;
-        const data = Array.isArray(res.data) ? res.data : []
+        // 后端可能返回 { total, list } 或数组格式
+        const data = Array.isArray(res.data) ? res.data : (res.data?.list || [])
         setStarList(data)
       })
       .catch(err => {
@@ -87,26 +89,26 @@ export default function Home() {
     }
   },[])
 
-  // 安全获取 token 信息，处理 SSR 环境
-  const tokenStr = useMemo(() => {
+  // 安全获取用户信息，处理 SSR 环境
+  const userStr = useMemo(() => {
     if (typeof window === 'undefined') return null;
-    return localStorage.getItem('token');
+    return localStorage.getItem('user');
   }, [])
   
   const token = useMemo(() => {
-    if (!tokenStr) return {};
+    if (!userStr) return {};
     try {
-      return JSON.parse(tokenStr);
+      return JSON.parse(userStr);
     } catch (e) {
       return {};
     }
-  }, [tokenStr])
+  }, [userStr])
   
   // 未登录时显示默认值
   const username = useMemo(() => token?.username || '游客', [token])
   const region = useMemo(() => token?.region || '全球', [token])
   const roleName = useMemo(() => token?.role?.roleName || '游客', [token])
-  const isLogin = useMemo(() => !!tokenStr, [tokenStr])
+  const isLogin = useMemo(() => !!userStr, [userStr])
 
   const renderBarView = useCallback((obj) => {
     if (!barRef.current) {
@@ -187,7 +189,8 @@ export default function Home() {
       .then(res=>{
         if (!isMounted) return;
         
-        const data = Array.isArray(res.data) ? res.data : []
+        // 后端可能返回 { total, list } 或数组格式
+        const data = Array.isArray(res.data) ? res.data : (res.data?.list || [])
         // 使用 categoryId 查找分类名称
         const grouped = groupBy(data, item => {
           if (item.category && item.category.title) {

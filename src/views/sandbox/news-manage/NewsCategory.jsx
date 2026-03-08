@@ -34,7 +34,12 @@ export default function NewsCategory() {
 
   useEffect(()=>{
     request.get('/categories').then(res=>{
-      setDataSource(res.data)
+      // 后端可能返回数组或 { total, list } 格式
+      const data = Array.isArray(res.data) ? res.data : (res.data?.list || [])
+      setDataSource(data)
+    }).catch(err => {
+      console.error('获取分类列表失败:', err)
+      setDataSource([])
     })
   },[])
 

@@ -108,27 +108,15 @@ export default function Register() {
 
   const onFinish = async (values) => {
     try {
-      // 1. 检查用户名是否已存在
-      const checkRes = await request.get(`/users?username=${values.username}`);
-      if (checkRes.data && checkRes.data.length > 0) {
-        message.error('用户名已存在，请更换用户名');
-        return;
-      }
-
-      // 2. 创建新用户（默认角色为区域编辑 roleId=3）
-      // 新注册的用户归同一区域的区域管理员管理（通过region关联）
-      const newUser = {
+      // 调用后端注册接口
+      const res = await request.post('/auth/register', {
         username: values.username,
         password: values.password,
         region: values.region,
-        roleId: "3", // 区域编辑
-        roleState: true,
-        default: false,
-      };
-
-      const createRes = await request.post('/users', newUser);
+        roleId: "3" // 区域编辑
+      });
       
-      if (createRes.data && createRes.data.id) {
+      if (res.data && res.data.message === '注册成功') {
         message.success('注册成功！请登录');
         // 延迟跳转到登录页
         setTimeout(() => {
@@ -137,7 +125,8 @@ export default function Register() {
       }
     } catch (error) {
       console.error('注册失败:', error);
-      message.error('注册失败，请稍后重试');
+      const errorMsg = error.response?.data?.message || '注册失败，请稍后重试';
+      message.error(errorMsg);
     }
   };
 
@@ -159,7 +148,7 @@ export default function Register() {
           }}
         />
       )}
-      <div className='fromContainer'>
+      <div className='fromContainer2'>
         <div className='logintitle'>用户注册</div>
         <Form
           name="register"

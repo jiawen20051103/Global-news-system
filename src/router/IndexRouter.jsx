@@ -58,13 +58,16 @@ export default function IndexRouter() {
   const [BackRouterList, setBackRouterList] = useState([])
   useEffect(() => {
     Promise.all([
-      request.get('/rights'),
-      request.get('/children'),
+      request.get('/rights').catch(() => ({ data: [] })),
+      request.get('/children').catch(() => ({ data: [] })),
     ])
       .then(([rightsRes, childrenRes]) => {
-        const rights = Array.isArray(rightsRes.data) ? rightsRes.data : []
-        const children = Array.isArray(childrenRes.data) ? childrenRes.data : []
-        setBackRouterList([...rights, ...children])
+        // 后端可能返回 { total, list } 或数组格式
+        const rights = Array.isArray(rightsRes.data) ? rightsRes.data : (rightsRes.data?.list || [])
+        const children = Array.isArray(childrenRes.data) ? childrenRes.data : (childrenRes.data?.list || [])
+        const allRoutes = [...rights, ...children]
+        // console.log('获取到的路由配置:', allRoutes)
+        setBackRouterList(allRoutes)
       })
       .catch((error) => {
         console.error('获取路由配置失败:', error)
@@ -93,7 +96,20 @@ export default function IndexRouter() {
       // 当本地 token 中没有权限信息时，默认放行（避免线上权限不同步导致整页空白）
       return true
     }
-    return role.rights.includes(item.key)
+    
+    // 直接匹配
+    if (role.rights.includes(item.key)) {
+      return true
+    }
+    
+    // 支持父级权限：如果有父级路由权限，允许访问子路由
+    // 例如：如果有 /news-manage 权限，允许访问 /news-manage/add, /news-manage/draft 等
+    const parentKey = item.key.split('/').slice(0, 2).join('/')
+    if (parentKey && parentKey !== item.key && role.rights.includes(parentKey)) {
+      return true
+    }
+    
+    return false
   }
 
   return (
@@ -116,15 +132,41 @@ export default function IndexRouter() {
           <Route path="news-manage/preview/:id" element={<NewsPreview />} />
           <Route path="news-manage/update/:id" element={<NewsUpdate />} />
           
-          {BackRouterList.map((item) => {
-            const Component = LocalRouterMap[item.key]
-            if (checkRoute(item) && checkUserPermission(item)) {
-              // 嵌套路由路径需要去掉开头的 /
-              const routePath = item.key.startsWith('/') ? item.key.slice(1) : item.key
-              return <Route path={routePath} key={item.key} element={<Component />} />
-            }
-            return null
-          })}
+          {/* 如果后端没有返回路由配置，使用默认路由 */}
+          {BackRouterList.length > 0 ? (
+            BackRouterList.map((item) => {
+              const Component = LocalRouterMap[item.key]
+              if (!Component) {
+                // console.warn(`路由 ${item.key} 没有对应的组件`)
+                return null
+              }
+              if (checkRoute(item) && checkUserPermission(item)) {
+                // 嵌套路由路径需要去掉开头的 /
+                const routePath = item.key.startsWith('/') ? item.key.slice(1) : item.key
+                // console.log(`注册路由: ${routePath} -> ${item.key}`)
+                return <Route path={routePath} key={item.key} element={<Component />} />
+              } else {
+                // console.log(`路由 ${item.key} 被过滤: checkRoute=${checkRoute(item)}, checkUserPermission=${checkUserPermission(item)}`)
+              }
+              return null
+            })
+          ) : (
+            // 默认路由：如果后端没有数据，至少显示这些基本路由
+            <>
+              <Route path="home" element={<Home />} />
+              <Route path="news-manage/add" element={<NewsAdd />} />
+              <Route path="news-manage/draft" element={<NewsDraft />} />
+              <Route path="news-manage/category" element={<NewsCategory />} />
+              <Route path="audit-manage/audit" element={<Audit />} />
+              <Route path="audit-manage/list" element={<AuditList />} />
+              <Route path="publish-manage/unpublished" element={<Unpublished />} />
+              <Route path="publish-manage/published" element={<Published />} />
+              <Route path="publish-manage/sunset" element={<Sunset />} />
+              <Route path="user-manage/list" element={<UserList />} />
+              <Route path="right-manage/role/list" element={<RoleList />} />
+              <Route path="right-manage/right/list" element={<RightList />} />
+            </>
+          )}
           <Route path="*" element={<NoPermission />} />
         </Route>
       </Routes>

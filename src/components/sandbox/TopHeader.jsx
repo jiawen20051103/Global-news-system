@@ -49,6 +49,7 @@ const TopHeader = (props) => {
       label: (
         <div onClick={()=>{
           localStorage.removeItem('token')
+          localStorage.removeItem('user')
           navigate('/login')
         }}>
           退出

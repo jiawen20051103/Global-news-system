@@ -45,32 +45,9 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/news': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-      },
-      '/users': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-      },
-      '/roles': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-      },
-      '/children': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-      },
-      '/rights': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-      },
-      '/categories': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-      },
-      '/regions': {
-        target: 'http://localhost:5000',
+      // 将所有 /api 开头的请求转发到本地 Express 后端
+      '/api': {
+        target: 'http://localhost:3001',
         changeOrigin: true,
       },
     }

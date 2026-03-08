@@ -1,11 +1,13 @@
 const getTokenInfo = () => {
-  const tokenStr = localStorage.getItem('token');
-  if (!tokenStr) return {};
+  // 从 localStorage 获取用户信息
+  const userStr = localStorage.getItem('user');
+  if (!userStr) return {};
 
   try {
-    return JSON.parse(tokenStr);
+    return JSON.parse(userStr);
   } catch (err) {
-    console.error('token 解析失败', err);
+    console.error('用户信息解析失败', err);
+    localStorage.removeItem('user');
     localStorage.removeItem('token');
     return {};
   }

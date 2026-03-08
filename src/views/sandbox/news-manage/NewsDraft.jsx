@@ -5,6 +5,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { DeleteOutlined,EditOutlined,ExclamationCircleFilled,UploadOutlined } from '@ant-design/icons'
 import { createStyles } from 'antd-style';
 import { checkLogin } from '@/util/checkLogin';
+import getTokenInfo from '@/util/getTokenInfo';
 import { showLoginModal } from '@/components/common/LoginModal';
 import { useLocation } from 'react-router-dom';
 
@@ -33,7 +34,7 @@ export default function NewsDraft() {
   const { styles } = useStyle();
   const [dataSource,setDataSource] = useState([])
   const isLogin = checkLogin()
-  const token = isLogin ? JSON.parse(localStorage.getItem('token')) : null
+  const token = isLogin ? getTokenInfo() : null
   const username = token?.username || ''
 
   useEffect(()=>{
@@ -49,13 +50,14 @@ export default function NewsDraft() {
     request.get(`/news?author=${username}&auditState=0&_embed=category`).then(res=>{
       // 只有在组件仍然挂载时才更新状态
       if (isMounted) {
-        const list = res.data
-        list.forEach(item => {
+        // 后端可能返回 { total, list } 或数组格式
+        const data = Array.isArray(res.data) ? res.data : (res.data?.list || [])
+        data.forEach(item => {
           if (item.children && item.children.length === 0) {
             item.children = null;
           }
         });
-        setDataSource(list)
+        setDataSource(data)
       }
     }).catch(err => {
       if (isMounted) {
@@ -102,7 +104,7 @@ export default function NewsDraft() {
       return;
     }
     
-    request.patch(`/news/${id}`,{
+    request.put(`/news/${id}/audit`,{
       auditState: 1
     }).then(res=>{
       navigate('/audit-manage/list')
@@ -110,6 +112,13 @@ export default function NewsDraft() {
         message: `通知`,
         description:
           `您可到审核列表中查看您的新闻`,
+        placement: 'bottomRight',
+      });
+    }).catch(err => {
+      console.error('提交审核失败:', err)
+      notification.error({
+        message: '提交失败',
+        description: '提交审核失败，请稍后重试',
         placement: 'bottomRight',
       });
     })

@@ -9,8 +9,14 @@ export default function News() {
   useEffect(()=>{
     request.get('/news?publishState=2&_embed=category')
       .then(res=>{
-        // console.log(Object.entries(_.groupBy(res.data,item=>item.category.title)));
-        setList(Object.entries(_.groupBy(res.data,item=>item.category.title)))
+        // 后端可能返回 { total, list } 或数组格式
+        const data = Array.isArray(res.data) ? res.data : (res.data?.list || [])
+        // console.log(Object.entries(_.groupBy(data,item=>item.category?.title || item.categoryId)));
+        setList(Object.entries(_.groupBy(data,item=>item.category?.title || item.categoryId)))
+      })
+      .catch(err => {
+        console.error('获取新闻列表失败:', err)
+        setList([])
       })
   },[])
 

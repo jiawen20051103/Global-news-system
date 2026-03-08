@@ -8,6 +8,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import '../../../components/sandbox/news-manage/NewsPreview.css';
 import { color } from 'echarts';
 import { checkLogin } from '@/util/checkLogin';
+import getTokenInfo from '@/util/getTokenInfo';
 import { showLoginModal } from '@/components/common/LoginModal';
 import { useLocation } from 'react-router-dom';
 
@@ -25,12 +26,16 @@ export default function NewsAdd() {
   
   // 检查是否登录
   const isLogin = checkLogin()
-  const User = isLogin ? JSON.parse(localStorage.getItem('token')) : null
+  const user = getTokenInfo()
 
   useEffect(()=>{
     request.get('/categories').then(res=>{
-      // console.log(res.data);
-      setCategoryList(res.data)
+      // 后端可能返回数组或 { total, list } 格式
+      const data = Array.isArray(res.data) ? res.data : (res.data?.list || [])
+      setCategoryList(data)
+    }).catch(err => {
+      console.error('获取分类列表失败:', err)
+      setCategoryList([])
     })
   },[])
 
@@ -45,6 +50,9 @@ export default function NewsAdd() {
       form.validateFields().then(res=>{
         // console.log(res);
         setFormInfo(res)
+        if (typeof window !== 'undefined') {
+          window.__NEWS_EDIT_DIRTY = true;
+        }
         setCurrent(current + 1)
       }).catch(error=>{
         console.log(error);
@@ -63,7 +71,7 @@ export default function NewsAdd() {
 
   const handleSave = (auditState) => {
     // 检查是否登录
-    if (!isLogin || !User) {
+    if (!isLogin || !user) {
       showLoginModal(navigate, location.pathname);
       return;
     }
@@ -71,9 +79,9 @@ export default function NewsAdd() {
     request.post('/news',{
       ...fromInfo,
       'content': content,
-      "region": User.region? User.region : '全球',
-      "author": User.username,
-      "roleId": User.roleId,
+      "region": user.region? user.region : '全球',
+      "author": user.username,
+      "roleId": user.roleId,
       "auditState": auditState,
       "publishState": 0,
       "createTime": Date.now(),
@@ -82,7 +90,10 @@ export default function NewsAdd() {
       // "publishTime":0
     }).then(res=>{
       // 确保数据已保存后再跳转
-      if (res.data && res.data.id) {
+      if (res.data && (res.data.id || res.data.news?.id)) {
+        if (typeof window !== 'undefined') {
+          window.__NEWS_EDIT_DIRTY = false;
+        }
         notification.info({
           message: `通知`,
           description:

@@ -5,6 +5,7 @@ import { useState,useEffect,useRef } from "react";
 import { DeleteOutlined,EditOutlined,ExclamationCircleFilled } from '@ant-design/icons'
 import { createStyles } from 'antd-style';
 import { useTheme } from "@/context/ThemeContext.jsx";
+import getTokenInfo from '@/util/getTokenInfo';
 const { confirm } = Modal;
 const useStyle = createStyles(({ css, token }) => {
   const { antCls } = token;
@@ -46,28 +47,44 @@ export default function UserList() {
   const addForm = useRef(null)
   const updateForm = useRef(null)
 
-  const {roleId,region,username} = JSON.parse(localStorage.getItem('token'))
+  const {roleId,region,username} = getTokenInfo()
 
   useEffect(()=>{
-    request.get('/users?_embed=role').then(res=>{
-      const list = res.data
-      setDataSource(roleObj[roleId] === 'superadmin'?list:[
-        ...list.filter(item=>item.username === username),
-        ...list.filter(item=>item.region === region && roleObj[item.roleId]=== 'editor'),
-      ])
-    })
+    // 取足够大的 pageSize，避免默认分页漏掉后面新注册的用户
+    request.get('/users?_embed=role&page=1&pageSize=1000')
+      .then(res=>{
+        // 后端可能返回 { total, list } 或数组格式
+        const list = Array.isArray(res.data) ? res.data : (res.data?.list || [])
+        const filtered = roleObj[roleId] === 'superadmin'
+          ? list
+          : [
+              ...list.filter(item=>item.username === username),
+              ...list.filter(item=>item.region === region && roleObj[item.roleId]=== 'editor'),
+            ]
+        setDataSource(Array.isArray(filtered) ? filtered : [])
+      })
+      .catch(err => {
+        console.error('获取用户列表失败：', err)
+        setDataSource([])
+      })
   },[roleId,region,username])
 
   useEffect(()=>{
-    request.get('/regions').then(res=>{
-      const list = res.data
-      setRegionList(list)
-    })
+    request.get('/regions')
+      .then(res=>{
+        const list = Array.isArray(res.data) ? res.data : (res.data?.list || [])
+        setRegionList(list)
+      })
+      .catch(err => {
+        console.error('获取区域列表失败：', err)
+        setRegionList([])
+      })
   },[])
 
   useEffect(()=>{
-    request.get('/roles').then(res=>{
-      const list = res.data
+    request.get('/roles')
+      .then(res=>{
+        const list = Array.isArray(res.data) ? res.data : (res.data?.list || [])
 
       // 将角色数据转换为Select需要的格式（label和value）
       const options = list.map(role => ({
@@ -78,7 +95,11 @@ export default function UserList() {
       }));
       
       setRoleList(options);
-    });
+    })
+      .catch(err => {
+        console.error('获取角色列表失败：', err)
+        setRoleList([])
+      })
   },[])
 
 
@@ -128,9 +149,10 @@ export default function UserList() {
   }
 
   const fetchUserList = () => {
-    request.get("/users?_embed=role")
+    request.get("/users?_embed=role&page=1&pageSize=1000")
       .then(res => {
-        setDataSource(res.data); // 用最新数据覆盖原有列表
+        const list = Array.isArray(res.data) ? res.data : (res.data?.list || [])
+        setDataSource(list); // 用最新数据覆盖原有列表
       })
       .catch(err => console.error('重新获取用户列表失败：', err));
   };
@@ -204,8 +226,11 @@ export default function UserList() {
     {
       title: '角色名称',
       dataIndex: 'role',
-      render: (role) => {
-          return role?.roleName
+      render: (role, item) => {
+        // 优先使用后端返回的 role 对象，其次用本地 roleList 映射
+        const fromBackend = role?.roleName;
+        const fromLocal = roleList.find(r => r.value === item.roleId)?.label;
+        return fromBackend || fromLocal || '-';
       }
     },
     {
@@ -248,7 +273,7 @@ export default function UserList() {
       <Button type="primary" onClick={() => setOpen(true)}>添加用户</Button>
       <Table 
         className={styles.customTable}
-        dataSource={dataSource} 
+        dataSource={Array.isArray(dataSource) ? dataSource : []} 
         columns={columns} 
         pagination={{ pageSize: 5 }}
         scroll={{ y: 50 * 5 }}

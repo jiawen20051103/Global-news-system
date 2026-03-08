@@ -105,21 +105,33 @@ export default function Login() {
   //   );
   // }
 
-  const onFinish = values => {
-    // console.log('Received values of form: ', values);
-
-    request.get(`/users?username=${values.username}&password=${values.password}&roleState=true&_embed=role`)
-      .then(res=>{
-        // console.log(res.data);
-        if(res.data.length === 0){
-          message.error('用户名或密码不匹配')
-        }else{
-          localStorage.setItem('token',JSON.stringify(res.data[0]))
-          // 如果是从其他页面跳转过来的，返回原页面，否则跳转到首页
-          const from = location.state?.from?.pathname || '/home'
-          navigate(from, { replace: true })
-        }
-    })
+  const onFinish = async (values) => {
+    try {
+      // 调用后端登录接口
+      const res = await request.post('/auth/login', {
+        username: values.username,
+        password: values.password
+      });
+      
+      if (res.data.success && res.data.token) {
+        // 存储 JWT token
+        localStorage.setItem('token', res.data.token);
+        // 存储用户信息（包含角色信息）
+        localStorage.setItem('user', JSON.stringify(res.data.user));
+        
+        message.success('登录成功');
+        
+        // 如果是从其他页面跳转过来的，返回原页面，否则跳转到首页
+        const from = location.state?.from?.pathname || '/home';
+        navigate(from, { replace: true });
+      } else {
+        message.error('登录失败，请重试');
+      }
+    } catch (error) {
+      console.error('登录错误:', error);
+      const errorMsg = error.response?.data?.message || '用户名或密码错误';
+      message.error(errorMsg);
+    }
   };
 
   return (
@@ -140,7 +152,7 @@ export default function Login() {
             }}
           />
       )}
-      <div className='fromContainer'>
+      <div className='fromContainer1'>
         <div className='logintitle'>全球新闻发布管理系统</div>
         <Form
           name="login"

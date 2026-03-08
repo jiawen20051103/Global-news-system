@@ -1,0 +1,11 @@
+# 前端
+node_modules/
+dist/
+
+# 后端
+backend/node_modules/
+backend/.env
+
+# 其它
+.DS_Store
+.env

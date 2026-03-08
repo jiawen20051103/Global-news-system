@@ -6,6 +6,7 @@ import style from '@/views/sandbox/news-manage/News.module.css';
 import request from '@/util/request.js'
 import NewsEditor from './NewsEditor';
 import { checkLogin } from '@/util/checkLogin';
+import getTokenInfo from '@/util/getTokenInfo';
 import { showLoginModal } from '@/components/common/LoginModal';
 import { useLocation } from 'react-router-dom';
 
@@ -21,12 +22,16 @@ export default function NewsUpdate() {
   
   // 检查是否登录
   const isLogin = checkLogin()
-  const User = isLogin ? JSON.parse(localStorage.getItem('token')) : null
+  const user = getTokenInfo()
 
   useEffect(()=>{
     request.get('/categories').then(res=>{
-      // console.log(res.data);
-      setCategoryList(res.data)
+      // 后端可能返回数组或 { total, list } 格式
+      const data = Array.isArray(res.data) ? res.data : (res.data?.list || [])
+      setCategoryList(data)
+    }).catch(err => {
+      console.error('获取分类列表失败:', err)
+      setCategoryList([])
     })
   },[])
 
@@ -34,10 +39,12 @@ export default function NewsUpdate() {
     // console.log(id);
     request.get(`/news/${id}?_embed=category&_embed=role`).then(res=>{
       // setNewsInfo(res.data)
-      let {title,categoryId,content} = res.data
+      const newsData = res.data?.news || res.data
+      let {title,categoryId,summary,content} = newsData
       form.setFieldsValue({
         title,
-        categoryId
+        categoryId,
+        summary,
       })
       setContent(content)
     })
@@ -54,6 +61,9 @@ export default function NewsUpdate() {
       form.validateFields().then(res=>{
         // console.log(res);
         setFormInfo(res)
+        if (typeof window !== 'undefined') {
+          window.__NEWS_EDIT_DIRTY = true;
+        }
         setCurrent(current + 1)
       }).catch(error=>{
         console.log(error);
@@ -72,16 +82,19 @@ export default function NewsUpdate() {
 
   const handleSave = (auditState) => {
     // 检查是否登录
-    if (!isLogin || !User) {
+    if (!isLogin || !user) {
       showLoginModal(navigate, location.pathname);
       return;
     }
     
-    request.patch(`/news/${id}`,{
+    request.put(`/news/${id}`,{
       ...fromInfo,
       'content': content,
       "auditState": auditState,
     }).then(res=>{
+      if (typeof window !== 'undefined') {
+        window.__NEWS_EDIT_DIRTY = false;
+      }
       navigate(auditState === 0 ? '/news-manage/draft' : '/audit-manage/list')
       notification.info({
         message: `通知`,
@@ -152,9 +165,21 @@ export default function NewsUpdate() {
               name="categoryId"
               rules={[{ required: true, message: 'Please input your news title !' }]}
             >
-              <Select 
-                options={categoryList}  
-              />
+              <Select>
+                {categoryList.map(item => (
+                  <Select.Option value={item.id} key={item.id}>
+                    {item.title}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              label="新闻概览"
+              name="summary"
+              rules={[{ required: true, message: 'Please input your news summary !' }]}
+            >
+              <Input />
             </Form.Item>
           </Form>
         </div>

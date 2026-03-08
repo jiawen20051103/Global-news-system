@@ -1,9 +1,10 @@
 import request from '@/util/request.js'
 import React,{useState,useEffect} from 'react'
-import { Table,Button,notification } from 'antd'
+import { Table,Button } from 'antd'
 import { createStyles } from 'antd-style';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { checkLogin } from '@/util/checkLogin';
+import getTokenInfo from '@/util/getTokenInfo';
 import { showLoginModal } from '@/components/common/LoginModal';
 
 const useStyle = createStyles(({ css, token }) => {
@@ -30,29 +31,36 @@ export default function Audit() {
   const navigate = useNavigate()
   const location = useLocation()
   const isLogin = checkLogin()
-  const token = isLogin ? JSON.parse(localStorage.getItem('token')) : null
+  const token = isLogin ? getTokenInfo() : null
   const roleId = token?.roleId || null
   const region = token?.region || ''
   const username = token?.username || ''
 
   useEffect(()=>{
-    // 未登录用户不显示审核列表
-    if (!isLogin) {
+    // 未登录或区域编辑不显示审核列表
+    if (!isLogin || roleId === '3') {
       setDataSource([])
       return
     }
     
-    const roleObj = {
-      '1': 'superadmin',
-      '2': 'admin',
-      '3': 'editor'
-    }
     request.get(`/news?auditState=1&_embed=category`).then(res=>{
-      const list = res.data
-      setDataSource(roleObj[roleId] === 'superadmin'?list:[
-        // ...list.filter(item=>item.author === username),
-        ...list.filter(item=>item.region === region && roleObj[item.roleId]=== 'editor'),
-      ])
+      // 后端可能返回 { total, list } 或数组格式
+      const data = Array.isArray(res.data) ? res.data : (res.data?.list || [])
+      
+      let filtered = []
+      if (roleId === '1') {
+        // 超级管理员：不能审核自己的新闻，其它所有新闻都可以
+        filtered = data.filter(item => item.author !== username)
+      } else if (roleId === '2') {
+        // 区域管理员：只能审核本区域的区域编辑的新闻
+        filtered = data.filter(item => item.region === region && item.roleId === '3')
+      }
+      
+      setDataSource(filtered)
+    })
+    .catch(err => {
+      console.error('获取审核列表失败:', err)
+      setDataSource([])
     })
   },[roleId,region,username,isLogin])
 
@@ -64,17 +72,16 @@ export default function Audit() {
     }
     
     setDataSource(dataSource.filter(data=>data.id !== item.id))
-    request.patch(`/news/${item.id}`,{
-      auditState,
-      publishState
-    }).then(res=>{
-      notification.info({
-        message: `通知`,
-        description:
-          '您可到[审核管理/审核列表]中查看您的新闻的审核状态',
-        placement: 'bottomRight',
-      });
-    })
+    request.put(`/news/${item.id}/audit`, { auditState })
+      .then(() => {
+        if (publishState !== undefined) {
+          return request.put(`/news/${item.id}/publish`, { publishState })
+        }
+        return null
+      })
+      .catch(err => {
+        console.error('审核操作失败:', err)
+      })
   }
 
   const columns = [
