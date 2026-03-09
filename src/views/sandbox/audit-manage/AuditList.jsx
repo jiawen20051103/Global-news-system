@@ -41,7 +41,7 @@ export default function AuditList() {
       return
     }
     
-    request.get(`/news?author=${username}&auditState_ne=0&publishState_lte=1`)
+    request.get(`/news?author=${username}&auditState_ne=0&publishState_lte=1&_embed=category`)
       .then(res=>{
         // 后端可能返回 { total, list } 或数组格式
         const data = Array.isArray(res.data) ? res.data : (res.data?.list || [])
@@ -118,28 +118,33 @@ export default function AuditList() {
     {
       title: '新闻分类',
       dataIndex: 'categoryId',
+      render:(value, record) => {
+        return <div>{record.category?.title || value}</div>
+      }
     },
     {
       title: '审核状态',
       dataIndex: 'auditState',
       render:(auditState) => {
+        const state = Number(auditState)
         const colorList = ['','orange','green','red']
         const auditList = ['草稿箱','审核中','已通过','未通过']
-        return <Tag color={colorList[auditState]}>{auditList[auditState]}</Tag>
+        return <Tag color={colorList[state]}>{auditList[state]}</Tag>
       }
     },
     {
       title: '操作',
       render:(item) => {
+        const state = Number(item.auditState)
         return <div>
           {
-            item.auditState === 1 && <Button type='primary' onClick={()=>handleRevert(item)}>撤销</Button>
+            state === 1 && <Button type='primary' onClick={()=>handleRevert(item)}>撤销</Button>
           }
           {
-            item.auditState === 2 && <Button type='primary'  onClick={()=>handlePublish(item)}>发布</Button>
+            state === 2 && <Button type='primary'  onClick={()=>handlePublish(item)}>发布</Button>
           }
           {
-            item.auditState === 3 && <Button type='primary' onClick={()=>handleUpdate(item)}>更新</Button>
+            state === 3 && <Button type='primary' onClick={()=>handleUpdate(item)}>更新</Button>
           }
         </div>
       }

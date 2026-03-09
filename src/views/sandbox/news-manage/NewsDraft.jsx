@@ -146,6 +146,9 @@ export default function NewsDraft() {
     {
       title: '新闻分类',
       dataIndex: 'categoryId',
+      render:(value, record) => {
+        return <div>{record.category?.title || value}</div>
+      }
     },
     {
       title: '操作',

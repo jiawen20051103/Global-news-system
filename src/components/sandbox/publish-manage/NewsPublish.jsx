@@ -37,11 +37,8 @@ export default function NewsPublish(props) {
     {
       title: '新闻分类',
       dataIndex: 'categoryId',
-      render:(value,record)=>{
-        if(value){
-          return <div>{value}</div>
-        }
-        return <div>{record.category?.title || ''}</div>
+      render:(value, record)=>{
+        return <div>{record.category?.title || value}</div>
       }
     },
     {
